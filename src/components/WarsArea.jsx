@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import ColorPicker from "./ColorPicker";
 import BonusPicker from "./BonusPicker";
+import Cookies from "js-cookie";
 
 export default function WarsArea() {
   const canvasRef = useRef(null);
@@ -9,6 +10,42 @@ export default function WarsArea() {
   const paintedPixels = useRef(new Map()); // Utilise useRef pour maintenir l'état entre les re-renders
   const [isActiveBomb, setIsActiveBomb] = useState(false);
   const [isActiveLine, setIsActiveLine] = useState(false);
+
+  const loadGridState = async () => {
+    try {
+      const response = await fetch("/api/loadGrid");
+      const data = await response.json();
+      if (data && data.grid) {
+        paintedPixels.current = new Map(
+          data.grid.map(({ key, value }) => [key, value])
+        );
+        redrawPixels(); // Assure-toi que cette fonction peut utiliser la ref `paintedPixels`
+      }
+    } catch (error) {
+      console.error("Failed to load grid:", error);
+    }
+  };
+
+  const saveGridState = async () => {
+    const gridArray = Array.from(paintedPixels.current, ([key, value]) => ({
+      key,
+      value,
+    }));
+    const nick = Cookies.get("nick");
+    try {
+      const response = await fetch("/api/saveGrid", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ grid: gridArray, nick: nick }),
+      });
+      const data = await response.json();
+      console.log("Grid state saved:", data);
+    } catch (error) {
+      console.error("Failed to save grid:", error);
+    }
+  };
 
   // Initialisation et écouteurs d'événements
   useEffect(() => {
@@ -56,9 +93,10 @@ export default function WarsArea() {
         const pixelY = Math.floor(y / 20) * 20;
         paintedPixels.current.set(`${pixelX},${pixelY}`, currentColor);
       }
-
+      saveGridState();
       redrawPixels();
       triggerCooldown();
+      loadGridState();
     }
 
     function drawLine(y) {
@@ -66,6 +104,7 @@ export default function WarsArea() {
 
       for (let i = 0; i < canvas.width; i += 20) {
         paintedPixels.current.set(`${i},${gridY}`, currentColor);
+        saveGridState();
       }
     }
 
@@ -99,6 +138,7 @@ export default function WarsArea() {
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("click", handleClick);
     redrawPixels();
+    loadGridState();
 
     let bombTimeout;
     if (isActiveBomb) {
@@ -146,9 +186,11 @@ export default function WarsArea() {
     for (let dx = -radius; dx <= radius; dx++) {
       for (let dy = -radius; dy <= radius; dy++) {
         if (dx * dx + dy * dy <= radius * radius) {
+          loadGridState();
           const pixelX = Math.floor((centerX + dx * 20) / 20) * 20;
           const pixelY = Math.floor((centerY + dy * 20) / 20) * 20;
           paintedPixels.current.set(`${pixelX},${pixelY}`, currentColor);
+          saveGridState();
         }
       }
     }
