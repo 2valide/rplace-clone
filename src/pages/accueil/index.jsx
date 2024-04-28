@@ -1,18 +1,29 @@
 import { useState } from "react";
 import Cookies from "js-cookie";
 import Header from "@/components/Header";
+import { useRouter } from "next/router";
 
 export default function Accueil() {
   const [nick, setNick] = useState(() => Cookies.get("nick") || "");
+  const router = useRouter();
+  const [error, setError] = useState("");
 
-  const handlePlay = () => {
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (!nick.trim()) {
+      // Vérifie si nick est vide ou composé uniquement d'espaces
+      setError("Le pseudonyme ne peut pas être vide."); // Définir un message d'erreur
+      return; // Arrête l'exécution si la validation échoue
+    }
     Cookies.set("nick", nick, { expires: 7 });
-
     console.log("Nick set to:", nick);
+    setError(""); // Efface les erreurs précédentes
+    router.push("/accueil/rplace");
   };
 
   const handleNickChange = (e) => {
     setNick(e.target.value);
+    if (error) setError(""); // Efface l'erreur lors de la modification du champ
   };
 
   return (
@@ -25,21 +36,24 @@ export default function Accueil() {
             <h1 className="text-2xl ">r/place</h1>
             <div>
               {/* input container */}
-              <form>
+              <form onSubmit={handleSubmit}>
                 <input
                   type="text"
                   value={nick}
                   onChange={handleNickChange}
-                  className="border-2 border-white rounded-lg p-2 m-2 text-black"
+                  className={`border-2 ${
+                    error ? "border-red-500" : "border-white"
+                  } rounded-lg p-2 m-2 text-black`}
                   placeholder="Nick..."
-                  required
+                  // required
                 />
                 <button
-                  onClick={handlePlay}
+                  type="submit"
                   className="border-2 border-white rounded-lg p-2 m-2 hover:bg-btnhover"
                 >
                   PLAY
                 </button>
+                {error && <p className="text-red-500">{error}</p>}
               </form>
             </div>
           </div>

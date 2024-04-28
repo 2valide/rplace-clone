@@ -38,7 +38,7 @@ export default function WarsArea() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ grid: gridArray, nick: nick }),
+        body: JSON.stringify({ grid: gridArray }),
       });
       const data = await response.json();
       console.log("Grid state saved:", data);
@@ -104,7 +104,6 @@ export default function WarsArea() {
 
       for (let i = 0; i < canvas.width; i += 20) {
         paintedPixels.current.set(`${i},${gridY}`, currentColor);
-        saveGridState();
       }
     }
 
@@ -190,7 +189,6 @@ export default function WarsArea() {
           const pixelX = Math.floor((centerX + dx * 20) / 20) * 20;
           const pixelY = Math.floor((centerY + dy * 20) / 20) * 20;
           paintedPixels.current.set(`${pixelX},${pixelY}`, currentColor);
-          saveGridState();
         }
       }
     }
