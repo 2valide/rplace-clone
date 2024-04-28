@@ -8,10 +8,17 @@ module.exports = {
   theme: {
     extend: {
       backgroundImage: {
-        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "gradient-conic":
-          "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+        "hero-pattern": "url('/img/background.jpg')",
       },
+      colors: {
+        'MainContentBackground': 'rgba(245, 245, 245, 0.47)',
+        'UtilitiesBackground': 'rgba(0, 0, 0, 0.61)'
+      },
+      height: {
+        '90%': '90.45678%',
+        '90%': '90%',
+
+      }
     },
   },
   plugins: [],
