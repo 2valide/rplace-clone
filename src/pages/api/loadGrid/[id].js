@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 
         const timeCreated = grid.createdAt;
         const timeNow = new Date();
-        const threeHours = 3 * 60 * 60 * 1000; // 3 heures en millisecondes
+        const threeHours = 3 * 60 * 60 * 1000; // 3 heures en millisecondes tset
         const isLocked = timeNow - new Date(timeCreated) > threeHours;
 
         res.status(200).json({ ...grid, isLocked });
