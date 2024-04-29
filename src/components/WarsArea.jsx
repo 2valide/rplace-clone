@@ -154,7 +154,7 @@ export default function WarsArea() {
       setTimeout(() => setIsActiveBomb(false), 300000); // Cooldown de 5 minutes
     } else if (bonusType === "line") {
       setIsActiveLine(true);
-      setTimeout(() => setIsActiveLine(false), 180000); // Cooldown de 3 minutes test
+      setTimeout(() => setIsActiveLine(false), 180000); // Cooldown de 3 minutes
     }
   }
 
