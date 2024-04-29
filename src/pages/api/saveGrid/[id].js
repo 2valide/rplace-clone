@@ -1,74 +1,67 @@
+// Importation de la fonction de connexion à la base de données MongoDB.
 import { connectToDatabase } from '../../../../lib/utils/mongodb/db.js';
 
+// La fonction 'handler' est l'API endpoint de Next.js qui gère les requêtes entrantes.
 export default async function handler(req, res) {
-    const { id } = req.query; // Récupération de l'ID de la grille depuis la requête
-    const { grid, nick } = req.body; // Récupération des données envoyées avec la requête
+    // Récupération de l'ID de la grille depuis la requête, attendue dans l'URL comme `/api/route?id=123`.
+    const { id } = req.query;
+
+    // Récupération des données de la grille envoyées avec la requête. 'grid' est supposé être
+    // un tableau d'objets avec la structure { key, value, nick }.
+    const { grid } = req.body;
 
     try {
-        const { db } = await connectToDatabase(); // Connexion à la base de données
+        // Connexion à la base de données MongoDB.
+        const { db } = await connectToDatabase();
 
-        // Recherche d'une grille existante avec l'ID spécifié
-        const existingGrid = await db.collection("grids").findOne({ gridId: id });
+        // Recherche dans la collection 'grids' d'un document avec l'ID spécifié.
+        const document = await db.collection("grids").findOne({ gridId: id });
 
-        if (!existingGrid) {
-            // Si la grille n'existe pas, elle est créée avec un timestamp
+        // Création des nouvelles entrées avec l'ajout d'un timestamp ISO pour chaque entrée.
+        const newEntries = grid.map(entry => ({
+            ...entry,
+            timestamp: new Date().toISOString()
+        }));
+
+        // Si le document avec l'ID spécifié n'existe pas déjà dans la collection,
+        // un nouveau document est créé avec les nouvelles entrées et un timestamp de création.
+        if (!document) {
             await db.collection("grids").insertOne({
                 gridId: id,
-                createdAt: new Date(),
-                grid,
-                nick
-                // Vous pouvez ajouter d'autres propriétés si nécessaire
+                createdAt: new Date().toISOString(),
+                grid: newEntries
             });
-            res.status(201).json({ message: "Grid created successfully" }); // Réponse pour la création
+            // Réponse HTTP avec un statut 201 pour indiquer que la ressource a été créée avec succès.
+            res.status(201).json({ message: "Grid created with initial entries." });
         } else {
-            // Si la grille existe déjà, mise à jour des informations
-            await db.collection("grids").updateOne(
-                { gridId: id },
-                { $set: { grid, nick } }
-            );
-            res.status(200).json({ message: "Grid updated successfully" }); // Réponse pour la mise à jour
+            // Si un document existe déjà, cette portion de code filtre les nouvelles entrées
+            // pour ne garder que celles qui n'ont pas de doublon de 'key' et 'value' dans la grille existante.
+            const gridUpdates = newEntries.filter(newEntry => {
+                return !document.grid.some(existingEntry =>
+                    existingEntry.key === newEntry.key && existingEntry.value === newEntry.value
+                );
+            }).map(newEntry => {
+                // Création d'un objet 'updateOne' pour chaque nouvelle entrée unique.
+                // Ce sera utilisé dans une opération de 'bulkWrite' pour la mise à jour en masse.
+                return {
+                    updateOne: {
+                        filter: { gridId: id },
+                        update: { $push: { grid: newEntry } }
+                    }
+                };
+            });
+
+            // Si il y a des mises à jour à effectuer, 'bulkWrite' les exécute toutes en une seule opération.
+            if (gridUpdates.length > 0) {
+                await db.collection("grids").bulkWrite(gridUpdates);
+            }
+
+            // Réponse HTTP avec un statut 200 pour indiquer que la grille a été mise à jour avec succès.
+            res.status(200).json({ message: "Grid updated with new entries." });
         }
     } catch (error) {
-        // Gestion des erreurs éventuelles lors des interactions avec la base de données
+        // Si une erreur se produit pendant le processus, on la capture ici et on répond avec un statut 500.
+        console.error("Error updating grid:", error);
         res.status(500).json({ error: error.message });
     }
 }
-// import { connectToDatabase } from '../../../../lib/utils/mongodb/db.js';
-
-// export default async function handler(req, res) {
-//     const { id } = req.query; // Récupération de l'ID de la grille depuis la requête
-//     const { grid, nick } = req.body; // Récupération des données envoyées avec la requête
-
-//     try {
-//         const { db } = await connectToDatabase(); // Connexion à la base de données
-
-//         // Recherche d'une grille existante avec l'ID spécifié
-//         const existingGrid = await db.collection("grids").findOne({ gridId: id });
-
-//         const newEntry = {
-//             nick,
-//             grid,
-//             timestamp: new Date().toISOString() // Enregistrer le moment de la modification
-//         };
-
-//         if (!existingGrid) {
-//             // Si la grille n'existe pas, elle est créée avec un timestamp
-//             await db.collection("grids").insertOne({
-//                 gridId: id,
-//                 createdAt: new Date(),
-//                 history: [newEntry] // Commencer l'historique avec la première entrée
-//             });
-//             res.status(201).json({ message: "Grid created successfully with initial entry" });
-//         } else {
-//             // Si la grille existe déjà, ajouter une nouvelle entrée à l'historique
-//             await db.collection("grids").updateOne(
-//                 { gridId: id },
-//                 { $push: { history: newEntry } }
-//             );
-//             res.status(200).json({ message: "Grid updated successfully with new history entry" });
-//         }
-//     } catch (error) {
-//         // Gestion des erreurs éventuelles lors des interactions avec la base de données
-//         res.status(500).json({ error: error.message });
-//     }
-// }
