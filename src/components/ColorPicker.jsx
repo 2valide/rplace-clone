@@ -1,6 +1,5 @@
 import React from "react";
 
-// Composant pour une case de couleur individuelle
 function ColorCase({ color, onColorSelect }) {
   return (
     <div
@@ -11,9 +10,7 @@ function ColorCase({ color, onColorSelect }) {
   );
 }
 
-// Composant principal pour la palette de couleurs avec sélecteur de précision
 export default function ColorPicker({ currentColor, setCurrentColor }) {
-  // Définissez ici les couleurs prédéfinies selon celles de votre image
   const predefinedColors = [
     "#000000",
     "#FFFFFF",
@@ -40,7 +37,6 @@ export default function ColorPicker({ currentColor, setCurrentColor }) {
     setCurrentColor(color);
   };
 
-  // Appliquez le style de fond similaire à celui de votre image
   return (
     <div
       className="flex flex-wrap justify-between items-center p-2 bg-UtilitiesBackground max-w-40 gap-1"
@@ -57,8 +53,7 @@ export default function ColorPicker({ currentColor, setCurrentColor }) {
         type="color"
         value={currentColor}
         onChange={(e) => setCurrentColor(e.target.value)}
-        className="mt-2 rounded shadow-sm"
-        style={{ width: "100%", height: "40px" }} // Ajustez selon le style souhaité
+        className="mt-2 rounded shadow-sm w-full h-10"
       />
     </div>
   );

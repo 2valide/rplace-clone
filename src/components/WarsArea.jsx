@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import ColorPicker from "./ColorPicker";
 import BonusPicker from "./BonusPicker";
 import Cookies from "js-cookie";
@@ -7,19 +8,20 @@ export default function WarsArea() {
   const canvasRef = useRef(null);
   const [currentColor, setCurrentColor] = useState("#ff0000");
   const [cooldown, setCooldown] = useState(false);
-  const paintedPixels = useRef(new Map()); // Utilise useRef pour maintenir l'état entre les re-renders
+  const paintedPixels = useRef(new Map());
   const [isActiveBomb, setIsActiveBomb] = useState(false);
   const [isActiveLine, setIsActiveLine] = useState(false);
+  const { id } = useRouter().query;
 
   const loadGridState = async () => {
     try {
-      const response = await fetch("/api/loadGrid");
+      const response = await fetch(`/api/loadGrid/${id}`);
       const data = await response.json();
       if (data && data.grid) {
         paintedPixels.current = new Map(
           data.grid.map(({ key, value }) => [key, value])
         );
-        redrawPixels(); // Assure-toi que cette fonction peut utiliser la ref `paintedPixels`
+        // redrawPixels();
       }
     } catch (error) {
       console.error("Failed to load grid:", error);
@@ -27,18 +29,19 @@ export default function WarsArea() {
   };
 
   const saveGridState = async () => {
-    const gridArray = Array.from(paintedPixels.current, ([key, value]) => ({
+    const nick = Cookies.get("nick");
+    const gridArray = Array.from(paintedPixels.current).map(([key, value]) => ({
       key,
       value,
+      nick,
     }));
-    const nick = Cookies.get("nick");
     try {
-      const response = await fetch("/api/saveGrid", {
+      const response = await fetch(`/api/saveGrid/${id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ grid: gridArray }),
+        body: JSON.stringify({ grid: gridArray, nick }),
       });
       const data = await response.json();
       console.log("Grid state saved:", data);
@@ -46,7 +49,6 @@ export default function WarsArea() {
       console.error("Failed to save grid:", error);
     }
   };
-
   // Initialisation et écouteurs d'événements
   useEffect(() => {
     console.log("Current color updated in ZoneDeCombat to:", currentColor);
@@ -61,7 +63,8 @@ export default function WarsArea() {
     canvas.height = 820 * devicePixelRatio;
 
     ctx.scale(devicePixelRatio, devicePixelRatio);
-    redrawPixels(ctx); // Dessine les pixels initiaux`
+    redrawPixels(ctx);
+    loadGridState();
 
     function handleMouseMove(e) {
       if (cooldown) return; // Ignore le mouvement de la souris si cooldown
@@ -78,17 +81,13 @@ export default function WarsArea() {
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
-      // Vérifiez si le bonus de la bombe est actif
       if (isActiveBomb) {
-        // Dessiner un cercle de pixels si le bonus de bombe est actif
         drawBombCircle(x, y);
-        setIsActiveBomb(false); // Désactiver le bonus de bombe après utilisation
+        setIsActiveBomb(false);
       } else if (isActiveLine) {
-        // Dessiner une ligne complète si le bonus de ligne est actif
         drawLine(y);
-        setIsActiveLine(false); // Désactiver le bonus de ligne après utilisation
+        setIsActiveLine(false);
       } else {
-        // Dessiner un seul pixel si aucun bonus n'est actif
         const pixelX = Math.floor(x / 20) * 20;
         const pixelY = Math.floor(y / 20) * 20;
         paintedPixels.current.set(`${pixelX},${pixelY}`, currentColor);
@@ -96,7 +95,6 @@ export default function WarsArea() {
       saveGridState();
       redrawPixels();
       triggerCooldown();
-      loadGridState();
     }
 
     function drawLine(y) {
@@ -108,7 +106,7 @@ export default function WarsArea() {
     }
 
     function drawHover(ctx, x, y) {
-      redrawPixels(ctx); // Efface le dernier survol et redessine le canvas
+      redrawPixels(ctx);
       ctx.strokeStyle = "gray";
       ctx.lineWidth = 2;
       ctx.strokeRect(x + 1, y + 1, 18, 18);
@@ -137,21 +135,18 @@ export default function WarsArea() {
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("click", handleClick);
     redrawPixels();
-    loadGridState();
 
-    let bombTimeout;
-    if (isActiveBomb) {
-      bombTimeout = setTimeout(() => setIsActiveBomb(false), 300000);
+    if (id) {
+      loadGridState(id);
+    } else {
+      console.log("Grid ID is undefined.");
     }
 
     return () => {
-      if (bombTimeout) {
-        clearTimeout(bombTimeout);
-      }
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("click", handleClick);
     };
-  }, [cooldown, currentColor, isActiveBomb]);
+  }, [cooldown, currentColor, isActiveBomb, id]);
 
   function handleBonusSelect(bonusType) {
     if (bonusType === "bomb") {
@@ -185,7 +180,7 @@ export default function WarsArea() {
     for (let dx = -radius; dx <= radius; dx++) {
       for (let dy = -radius; dy <= radius; dy++) {
         if (dx * dx + dy * dy <= radius * radius) {
-          loadGridState();
+          // loadGridState();
           const pixelX = Math.floor((centerX + dx * 20) / 20) * 20;
           const pixelY = Math.floor((centerY + dy * 20) / 20) * 20;
           paintedPixels.current.set(`${pixelX},${pixelY}`, currentColor);
