@@ -107,8 +107,6 @@ Récupère les données d'une grille spécifique par son identifiant unique.
   }
   ```
 
-````
-
 #### 2. Mettre à jour un pixel sur la grille
 
 **POST `/api/grid/{id}`**
@@ -164,4 +162,7 @@ Ce projet est distribué sous la licence MIT.
 Votre Anthony ZHAO – a_zhao1@hetic.eu
 
 Lien du projet : [https://github.com/2valide/rplace-clone/](https://github.com/2valide/rplace-clone/)
-````
+
+```
+
+```
