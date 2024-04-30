@@ -16,7 +16,7 @@ export default function Accueil() {
       setError("Le pseudonyme ne peut pas être vide.");
       return;
     }
-    Cookies.set("nick", nick, { expires: 7 });
+    saveNickCookie();
     router.push("/accueil/rplace/ffa");
   };
 
@@ -31,9 +31,14 @@ export default function Accueil() {
       return;
     }
     const newId = Math.random().toString(36).substring(2, 6);
+    saveNickCookie();
     router.push(`/accueil/rplace/${newId}`);
     setShowCreateButton(false);
     setShowPartyInput(true);
+  };
+
+  const saveNickCookie = () => {
+    Cookies.set("nick", nick, { expires: 7 });
   };
 
   return (
