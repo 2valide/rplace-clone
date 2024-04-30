@@ -3,81 +3,78 @@ import { useRouter } from "next/router";
 import ColorPicker from "./ColorPicker";
 import BonusPicker from "./BonusPicker";
 import Cookies from "js-cookie";
+import io from "socket.io-client";
 
 export default function WarsArea() {
-  const canvasRef = useRef(null);
+  const canvasRef = useRef(null); // Correctly using useRef here
   const [currentColor, setCurrentColor] = useState("#ff0000");
   const [cooldown, setCooldown] = useState(false);
   const paintedPixels = useRef(new Map());
   const [isActiveBomb, setIsActiveBomb] = useState(false);
   const [isActiveLine, setIsActiveLine] = useState(false);
+  const [isActiveLineX, setIsActiveLineX] = useState(false);
   const { id } = useRouter().query;
+  const socket = useRef(null);
 
-  const loadGridState = async () => {
-    try {
-      const response = await fetch(`/api/loadGrid/${id}`);
-      const data = await response.json();
-      if (data && data.grid) {
-        paintedPixels.current = new Map(
-          data.grid.map(({ key, value }) => [key, value])
-        );
-        // redrawPixels();
-      }
-    } catch (error) {
-      console.error("Failed to load grid:", error);
-    }
-  };
-
-  const saveGridState = async () => {
-    const nick = Cookies.get("nick");
-    const gridArray = Array.from(paintedPixels.current).map(([key, value]) => ({
-      key,
-      value,
-      nick,
-    }));
-    try {
-      const response = await fetch(`/api/saveGrid/${id}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ grid: gridArray, nick }),
-      });
-      const data = await response.json();
-      console.log("Grid state saved:", data);
-    } catch (error) {
-      console.error("Failed to save grid:", error);
-    }
-  };
-  // Initialisation et écouteurs d'événements
   useEffect(() => {
-    console.log("Current color updated in ZoneDeCombat to:", currentColor);
+    socket.current = io(); // Assuming your server is setup to handle WebSocket connections at the root.
 
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const devicePixelRatio = window.devicePixelRatio || 1;
+    return () => {
+      socket.current.disconnect();
+    };
+  }, []);
 
-    canvas.style.width = "820px";
-    canvas.style.height = "820px";
-    canvas.width = 820 * devicePixelRatio;
-    canvas.height = 820 * devicePixelRatio;
+  useEffect(() => {
+    const loadGridState = async () => {
+      try {
+        const response = await fetch(`/api/loadGrid/${id}`);
+        const data = await response.json();
+        if (data && data.grid) {
+          paintedPixels.current = new Map(
+            data.grid.map(({ key, value, nick }) => [
+              key,
+              { color: value, nick },
+            ])
+          );
+          redrawPixels(); // Make sure to define this function correctly
+        }
+      } catch (error) {
+        console.error("Failed to load grid:", error);
+      }
+    };
 
-    ctx.scale(devicePixelRatio, devicePixelRatio);
-    redrawPixels(ctx);
     loadGridState();
 
-    function handleMouseMove(e) {
-      if (cooldown) return; // Ignore le mouvement de la souris si cooldown
-      const rect = canvas.getBoundingClientRect();
-      const x = Math.floor((e.clientX - rect.left) / 20) * 20;
-      const y = Math.floor((e.clientY - rect.top) / 20) * 20;
-      drawHover(ctx, x, y);
+    function redrawPixels() {
+      const ctx = canvasRef.current.getContext("2d"); // Accessing canvas context
+      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height); // Use canvasRef.current
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height); // Use canvasRef.current
+      paintedPixels.current.forEach(({ color }, key) => {
+        const [x, y] = key.split(",").map(Number);
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, 20, 20);
+      });
     }
 
-    function handleClick(e) {
+    function drawHover(ctx, x, y) {
+      ctx.strokeStyle = "gray";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 1, y + 1, 18, 18);
+    }
+
+    const handleMouseMove = (e) => {
+      if (cooldown) return;
+      const rect = canvasRef.current.getBoundingClientRect(); // Using canvasRef.current
+      const x = Math.floor((e.clientX - rect.left) / 20) * 20;
+      const y = Math.floor((e.clientY - rect.top) / 20) * 20;
+      drawHover(canvasRef.current.getContext("2d"), x, y);
+    };
+
+    const handleClick = (e) => {
       if (cooldown || checkCooldown()) return;
 
-      const rect = canvas.getBoundingClientRect();
+      const rect = canvasRef.current.getBoundingClientRect(); // Using canvasRef.current
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
@@ -88,84 +85,32 @@ export default function WarsArea() {
         drawLine(y);
         setIsActiveLine(false);
       } else {
-        const pixelX = Math.floor(x / 20) * 20;
-        const pixelY = Math.floor(y / 20) * 20;
-        paintedPixels.current.set(`${pixelX},${pixelY}`, currentColor);
+        const pixelKey = `${Math.floor(x / 20) * 20},${
+          Math.floor(y / 20) * 20
+        }`;
+        paintedPixels.current.set(pixelKey, {
+          color: currentColor,
+          nick: Cookies.get("nick"),
+        });
       }
-      saveGridState();
+
+      socket.current.emit("update_pixel", {
+        key: `${Math.floor(x / 20) * 20},${Math.floor(y / 20) * 20}`,
+        color: currentColor,
+        nick: Cookies.get("nick"),
+      });
       redrawPixels();
       triggerCooldown();
-    }
+    };
 
-    function drawLine(y) {
-      const gridY = Math.floor(y / 20) * 20;
-
-      for (let i = 0; i < canvas.width; i += 20) {
-        paintedPixels.current.set(`${i},${gridY}`, currentColor);
-      }
-    }
-
-    function drawHover(ctx, x, y) {
-      redrawPixels(ctx);
-      ctx.strokeStyle = "gray";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x + 1, y + 1, 18, 18);
-    }
-
-    function redrawPixels() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      paintedPixels.current.forEach((color, key) => {
-        const [x, y] = key.split(",").map(Number);
-        ctx.fillStyle = color;
-        ctx.fillRect(x, y, 20, 20);
-      });
-    }
-
-    function triggerCooldown() {
-      setCooldown(true);
-      setCookie("cooldown", "true", 5);
-      setTimeout(() => {
-        setCooldown(false);
-        clearCookie("cooldown");
-      }, 5000);
-    }
-
-    canvas.addEventListener("mousemove", handleMouseMove);
-    canvas.addEventListener("click", handleClick);
-    redrawPixels();
-
-    if (id) {
-      loadGridState(id);
-    } else {
-      console.log("Grid ID is undefined.");
-    }
+    canvasRef.current.addEventListener("mousemove", handleMouseMove);
+    canvasRef.current.addEventListener("click", handleClick);
 
     return () => {
-      canvas.removeEventListener("mousemove", handleMouseMove);
-      canvas.removeEventListener("click", handleClick);
+      canvasRef.current.removeEventListener("mousemove", handleMouseMove);
+      canvasRef.current.removeEventListener("click", handleClick);
     };
-  }, [cooldown, currentColor, isActiveBomb, id]);
-
-  function handleBonusSelect(bonusType) {
-    if (bonusType === "bomb") {
-      setIsActiveBomb(true);
-      setTimeout(() => setIsActiveBomb(false), 300000); // Cooldown de 5 minutes
-    } else if (bonusType === "line") {
-      setIsActiveLine(true);
-      setTimeout(() => setIsActiveLine(false), 180000); // Cooldown de 3 minutes
-    }
-  }
-
-  function setCookie(name, value, seconds) {
-    const expires = new Date(Date.now() + seconds * 1000).toUTCString();
-    document.cookie = `${name}=${value}; expires=${expires}; path=/`;
-  }
-
-  function clearCookie(name) {
-    document.cookie = `${name}=; Max-Age=0; path=/`;
-  }
+  }, [cooldown, isActiveBomb, isActiveLine, isActiveLineX, id]);
 
   function checkCooldown() {
     return document.cookie
@@ -173,20 +118,9 @@ export default function WarsArea() {
       .some((item) => item.trim().startsWith("cooldown=true"));
   }
 
-  console.log("Initial currentColor:", currentColor);
-
-  function drawBombCircle(centerX, centerY) {
-    const radius = 4; // Rayon pour un cercle de 8 pixels de diamètre
-    for (let dx = -radius; dx <= radius; dx++) {
-      for (let dy = -radius; dy <= radius; dy++) {
-        if (dx * dx + dy * dy <= radius * radius) {
-          // loadGridState();
-          const pixelX = Math.floor((centerX + dx * 20) / 20) * 20;
-          const pixelY = Math.floor((centerY + dy * 20) / 20) * 20;
-          paintedPixels.current.set(`${pixelX},${pixelY}`, currentColor);
-        }
-      }
-    }
+  function triggerCooldown() {
+    setCooldown(true);
+    setTimeout(() => setCooldown(false), 5000);
   }
 
   return (
@@ -208,8 +142,13 @@ export default function WarsArea() {
           className="border border-gray-400"
         />
       </div>
-
-      <BonusPicker onBonusSelect={handleBonusSelect} />
+      <BonusPicker
+        onBonusSelect={(bonusType) => {
+          if (bonusType === "bomb") setIsActiveBomb(true);
+          else if (bonusType === "line") setIsActiveLine(true);
+          else if (bonusType === "lineX") setIsActiveLineX(true);
+        }}
+      />
     </>
   );
 }
