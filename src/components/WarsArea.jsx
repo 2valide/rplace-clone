@@ -11,6 +11,7 @@ export default function WarsArea() {
   const paintedPixels = useRef(new Map());
   const [isActiveBomb, setIsActiveBomb] = useState(false);
   const [isActiveLine, setIsActiveLine] = useState(false);
+  const [isActiveLineX, setIsActiveLineX] = useState(false);
   const { id } = useRouter().query;
 
   const loadGridState = async () => {
@@ -87,6 +88,9 @@ export default function WarsArea() {
       } else if (isActiveLine) {
         drawLine(y);
         setIsActiveLine(false);
+      } else if (isActiveLineX) {
+        drawlineX(x);
+        setIsActiveLineX(false);
       } else {
         const pixelX = Math.floor(x / 20) * 20;
         const pixelY = Math.floor(y / 20) * 20;
@@ -102,6 +106,14 @@ export default function WarsArea() {
 
       for (let i = 0; i < canvas.width; i += 20) {
         paintedPixels.current.set(`${i},${gridY}`, currentColor);
+      }
+    }
+
+    function drawlineX(x) {
+      const gridX = Math.floor(x / 20) * 20;
+
+      for (let i = 0; i < canvas.height; i += 20) {
+        paintedPixels.current.set(`${gridX}, ${i}`, currentColor);
       }
     }
 
@@ -155,6 +167,9 @@ export default function WarsArea() {
     } else if (bonusType === "line") {
       setIsActiveLine(true);
       setTimeout(() => setIsActiveLine(false), 180000); // Cooldown de 3 minutes
+    } else if (bonusType === "lineX") {
+      setIsActiveLineX(true);
+      setTimeout(() => setIsActiveLineX(false), 180000); // Cooldown de 3 minutes
     }
   }
 
