@@ -143,16 +143,6 @@ Permet à un utilisateur de mettre à jour un pixel sur la grille spécifiée pa
 
 Ce modèle de documentation d'API fournit des informations claires sur les fonctionnalités disponibles via l'API, comment les utiliser, et des exemples de requêtes et de réponses. Vous pouvez ajuster les détails selon les spécifications exactes et les règles métier de votre application.
 
-### Mettre à Jour un Pixel
-
-```bash
-curl -X POST "http://localhost:3000/api/grid/{id}" -H "Content-Type: application/json" -d '{ "grid": [{"key": "100,200", "value": "#ffffff", "nick": "username"}]}'
-```
-
-```bash
-npm test
-```
-
 ## Licence
 
 Ce projet est distribué sous la licence MIT.
