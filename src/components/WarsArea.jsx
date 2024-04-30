@@ -14,39 +14,44 @@ export default function WarsArea() {
   const [isActiveLineX, setIsActiveLineX] = useState(false);
   const { id } = useRouter().query;
   const [isLoading, setLoading] = useState(true);
+  const [currentNick, setCurrentNick] = useState("");
 
   const loadGridState = async () => {
-    setLoading(true);
+    setLoading(true); // Démarre l'indicateur de chargement
     try {
-      const response = await fetch(`/api/loadGrid/${id}`);
-      const data = await response.json();
+      const response = await fetch(`/api/loadGrid/${id}`); // Appel API pour obtenir les données de la grille
+      const data = await response.json(); // Conversion de la réponse en JSON
       if (data && data.grid) {
         paintedPixels.current = new Map(
-          data.grid.map(({ key, value }) => [key, value])
+          data.grid.map(({ key, value, nick }) => [key, { color: value, nick }])
+          // Création d'un nouveau Map où chaque clé est associée à un objet contenant les propriétés 'color' et 'nick'
         );
-        // redrawPixels();
+        // redrawPixels(); // Redessine les pixels à chaque chargement de l'état de la grille
       }
     } catch (error) {
-      console.error("Failed to load grid:", error);
+      console.error("Failed to load grid:", error); // Gestion des erreurs
     } finally {
-      setLoading(false);
+      setLoading(false); // Arrête l'indicateur de chargement une fois le processus terminé
     }
   };
 
   const saveGridState = async () => {
     const nick = Cookies.get("nick");
-    const gridArray = Array.from(paintedPixels.current).map(([key, value]) => ({
-      key,
-      value,
-      nick,
-    }));
+    const gridArray = Array.from(paintedPixels.current).map(
+      ([key, details]) => ({
+        key,
+        value: details.color, // Assurez-vous que 'details.color' contient la valeur correcte
+        nick: details.nick || nick,
+      })
+    );
+    console.log("Sending to server:", gridArray); // Log pour vérifier les données envoyées
     try {
       const response = await fetch(`/api/saveGrid/${id}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ grid: gridArray, nick }),
+        body: JSON.stringify({ grid: gridArray }),
       });
       const data = await response.json();
       console.log("Grid state saved:", data);
@@ -54,6 +59,7 @@ export default function WarsArea() {
       console.error("Failed to save grid:", error);
     }
   };
+
   // Initialisation et écouteurs d'événements
   useEffect(() => {
     console.log("Current color updated in ZoneDeCombat to:", currentColor);
@@ -76,6 +82,14 @@ export default function WarsArea() {
       const rect = canvas.getBoundingClientRect();
       const x = Math.floor((e.clientX - rect.left) / 20) * 20;
       const y = Math.floor((e.clientY - rect.top) / 20) * 20;
+      const pixelKey = `${x},${y}`;
+      const pixel = paintedPixels.current.get(pixelKey);
+
+      if (pixel && pixel.nick) {
+        setCurrentNick(pixel.nick);
+      } else {
+        setCurrentNick("");
+      }
       drawHover(ctx, x, y);
     }
 
@@ -132,7 +146,7 @@ export default function WarsArea() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = "#FFFFFF";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      paintedPixels.current.forEach((color, key) => {
+      paintedPixels.current.forEach(({ color, nick }, key) => {
         const [x, y] = key.split(",").map(Number);
         ctx.fillStyle = color;
         ctx.fillRect(x, y, 20, 20);
@@ -238,8 +252,12 @@ export default function WarsArea() {
           }}
           className="border border-gray-400"
         />
+        {currentNick && (
+          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 bg-white text-black p-2">
+            {currentNick}
+          </div>
+        )}
       </div>
-
       <BonusPicker onBonusSelect={handleBonusSelect} />
     </>
   );

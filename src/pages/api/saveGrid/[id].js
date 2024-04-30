@@ -3,16 +3,16 @@ import { connectToDatabase } from '../../../../lib/utils/mongodb/db.js';
 
 // La fonction 'handler' est l'API endpoint de Next.js qui gère les requêtes entrantes.
 export default async function handler(req, res) {
-    // Récupération de l'ID de la grille depuis la requête, attendue dans l'URL comme `/api/route?id=123`.
-    const { id } = req.query;
+    const { id } = req.query; // Récupération de l'ID de la grille depuis la requête, attendue dans l'URL comme `/api/route?id=123`.
+    const { grid } = req.body; // Récupération des données de la grille envoyées avec la requête.
 
-    // Récupération des données de la grille envoyées avec la requête. 'grid' est supposé être
-    // un tableau d'objets avec la structure { key, value, nick }.
-    const { grid } = req.body;
+    // Vérification rapide pour s'assurer que toutes les entrées sont valides
+    if (grid.some(entry => !entry.key || !entry.value)) {
+        return res.status(400).json({ message: "Missing key or value in some grid entries." });
+    }
 
     try {
-        // Connexion à la base de données MongoDB.
-        const { db } = await connectToDatabase();
+        const { db } = await connectToDatabase(); // Connexion à la base de données MongoDB.
 
         // Recherche dans la collection 'grids' d'un document avec l'ID spécifié.
         const document = await db.collection("grids").findOne({ gridId: id });
@@ -23,26 +23,22 @@ export default async function handler(req, res) {
             timestamp: new Date().toISOString()
         }));
 
-        // Si le document avec l'ID spécifié n'existe pas déjà dans la collection,
-        // un nouveau document est créé avec les nouvelles entrées et un timestamp de création.
         if (!document) {
+            // Si le document avec l'ID spécifié n'existe pas déjà dans la collection,
+            // un nouveau document est créé avec les nouvelles entrées et un timestamp de création.
             await db.collection("grids").insertOne({
                 gridId: id,
                 createdAt: new Date().toISOString(),
                 grid: newEntries
             });
-            // Réponse HTTP avec un statut 201 pour indiquer que la ressource a été créée avec succès.
             res.status(201).json({ message: "Grid created with initial entries." });
         } else {
-            // Si un document existe déjà, cette portion de code filtre les nouvelles entrées
-            // pour ne garder que celles qui n'ont pas de doublon de 'key' et 'value' dans la grille existante.
+            // Filtrage des nouvelles entrées pour éviter les doublons de clé et valeur.
             const gridUpdates = newEntries.filter(newEntry => {
                 return !document.grid.some(existingEntry =>
                     existingEntry.key === newEntry.key && existingEntry.value === newEntry.value
                 );
             }).map(newEntry => {
-                // Création d'un objet 'updateOne' pour chaque nouvelle entrée unique.
-                // Ce sera utilisé dans une opération de 'bulkWrite' pour la mise à jour en masse.
                 return {
                     updateOne: {
                         filter: { gridId: id },
@@ -51,16 +47,15 @@ export default async function handler(req, res) {
                 };
             });
 
-            // Si il y a des mises à jour à effectuer, 'bulkWrite' les exécute toutes en une seule opération.
+            // Exécution des mises à jour si nécessaire.
             if (gridUpdates.length > 0) {
                 await db.collection("grids").bulkWrite(gridUpdates);
+                res.status(200).json({ message: "Grid updated with new entries." });
+            } else {
+                res.status(200).json({ message: "No new entries needed to update." });
             }
-
-            // Réponse HTTP avec un statut 200 pour indiquer que la grille a été mise à jour avec succès.
-            res.status(200).json({ message: "Grid updated with new entries." });
         }
     } catch (error) {
-        // Si une erreur se produit pendant le processus, on la capture ici et on répond avec un statut 500.
         console.error("Error updating grid:", error);
         res.status(500).json({ error: error.message });
     }
