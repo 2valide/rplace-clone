@@ -13,8 +13,10 @@ export default function WarsArea() {
   const [isActiveLine, setIsActiveLine] = useState(false);
   const [isActiveLineX, setIsActiveLineX] = useState(false);
   const { id } = useRouter().query;
+  const [isLoading, setLoading] = useState(true);
 
   const loadGridState = async () => {
+    setLoading(true);
     try {
       const response = await fetch(`/api/loadGrid/${id}`);
       const data = await response.json();
@@ -26,6 +28,8 @@ export default function WarsArea() {
       }
     } catch (error) {
       console.error("Failed to load grid:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -195,7 +199,6 @@ export default function WarsArea() {
     for (let dx = -radius; dx <= radius; dx++) {
       for (let dy = -radius; dy <= radius; dy++) {
         if (dx * dx + dy * dy <= radius * radius) {
-          // loadGridState();
           const pixelX = Math.floor((centerX + dx * 20) / 20) * 20;
           const pixelY = Math.floor((centerY + dy * 20) / 20) * 20;
           paintedPixels.current.set(`${pixelX},${pixelY}`, currentColor);
@@ -206,6 +209,19 @@ export default function WarsArea() {
 
   return (
     <>
+      <div
+        className={
+          isLoading
+            ? "absolute z-50 flex justify-center items-center top-0 right-0 bottom-0 left-0 bg-black bg-opacity-50"
+            : "hidden"
+        }
+      >
+        <div class="flex flex-row gap-2">
+          <div class="w-4 h-4 bg-black animate-bounce"></div>
+          <div class="w-4 h-4 bg-black animate-bounce [animation-delay:-.3s]"></div>
+          <div class="w-4 h-4 bg-black animate-bounce [animation-delay:-.5s]"></div>
+        </div>
+      </div>
       <div className="z-10">
         <ColorPicker
           currentColor={currentColor}
