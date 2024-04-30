@@ -26,7 +26,7 @@ Vous devez avoir installé les outils suivants pour exécuter ce projet :
 Clonez le dépôt et installez les dépendances :
 
 ```bash
-git clone https://github.com/yourusername/r-place.git
+git clone https://github.com/2valide/rplace-clone/
 cd r-place
 npm install
 ```
@@ -41,8 +41,8 @@ cp .env.example .env
 
 Assurez-vous de définir les variables suivantes dans votre `.env` :
 
-- `MONGODB_URI`: Votre chaîne de connexion à MongoDB.
-- `NEXT_PUBLIC_API_URL`: URL de l'API pour les appels côté client, si différente de l'URL de base.
+- `<MONGODB_URI>`: Votre chaîne de connexion à MongoDB.
+- `<DB_NAME>`: URL de l'API pour les appels côté client, si différente de l'URL de base.
 
 ## Lancement du Projet
 
@@ -73,17 +73,9 @@ curl -X GET "http://localhost:3000/api/grid/{id}" -H "Accept: application/json"
 curl -X POST "http://localhost:3000/api/grid/{id}" -H "Content-Type: application/json" -d '{ "grid": [{"key": "100,200", "value": "#ffffff", "nick": "username"}]}'
 ```
 
-## Tests
-
-Exécutez les tests automatisés (si implémentés) :
-
 ```bash
 npm test
 ```
-
-## Contribuer
-
-Pour contribuer au projet, veuillez suivre le processus standard pour proposer des pull requests.
 
 ## Licence
 
@@ -93,4 +85,4 @@ Ce projet est distribué sous la licence MIT.
 
 Votre Anthony ZHAO – a_zhao1@hetic.eu
 
-Lien du projet : [https://github.com/2valide/rplace-clone/tree/readme](https://github.com/2valide/rplace-clone/tree/readme)
+Lien du projet : [https://github.com/2valide/rplace-clone/](https://github.com/2valide/rplace-clone/)
