@@ -28,7 +28,8 @@ module.exports = {
       },
       fontFamily: {
         'pixelFont': '"Press Start 2P", system-ui'
-      }
+      },
+
     },
   },
   plugins: [],
