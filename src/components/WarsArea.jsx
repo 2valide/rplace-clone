@@ -1,3 +1,4 @@
+import io from "socket.io-client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import ColorPicker from "./ColorPicker";
@@ -6,6 +7,7 @@ import Cookies from "js-cookie";
 
 export default function WarsArea() {
   const canvasRef = useRef(null);
+  const [socket, setSocket] = useState(null);
   const [currentColor, setCurrentColor] = useState("#ff0000");
   const [cooldown, setCooldown] = useState(false);
   const paintedPixels = useRef(new Map());
@@ -27,7 +29,6 @@ export default function WarsArea() {
         paintedPixels.current = new Map(
           data.grid.map(({ key, value }) => [key, value])
         );
-        // redrawPixels();
       }
     } catch (error) {
       console.error("Failed to load grid:", error);
@@ -60,7 +61,8 @@ export default function WarsArea() {
   // Initialisation et écouteurs d'événements
   useEffect(() => {
     console.log("Current color updated in ZoneDeCombat to:", currentColor);
-
+    const newSocket = io(`http://localhost:3001`);
+    setSocket(newSocket);
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const devicePixelRatio = window.devicePixelRatio || 1;
@@ -112,6 +114,10 @@ export default function WarsArea() {
         const pixelX = Math.floor(x / 20) * 20;
         const pixelY = Math.floor(y / 20) * 20;
         paintedPixels.current.set(`${pixelX},${pixelY}`, currentColor);
+        socket.emit("update_pixel", {
+          key: `${pixelX},${pixelY}`,
+          color: currentColor,
+        });
       }
       saveGridState();
       redrawPixels();
@@ -161,6 +167,13 @@ export default function WarsArea() {
       }, 5000);
     }
 
+    newSocket.on("update_pixel", (data) => {
+      console.log("Mise à jour reçue:", data);
+      const { key, color } = data;
+      paintedPixels.current.set(key, color);
+      redrawPixels();
+    });
+
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("click", handleClick);
     redrawPixels();
@@ -174,6 +187,7 @@ export default function WarsArea() {
     return () => {
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("click", handleClick);
+      newSocket.close();
     };
   }, [cooldown, currentColor, isActiveBomb, id]);
 
