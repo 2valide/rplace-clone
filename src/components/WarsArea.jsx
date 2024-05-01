@@ -244,7 +244,10 @@ export default function WarsArea() {
             : "hidden"
         }
       >
-        <form onSubmit={handleSubmit} className="bg-white p-4 rounded-lg">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-MainContentBackground p-10  rounded-lg"
+        >
           <input
             type="text"
             value={nick}
