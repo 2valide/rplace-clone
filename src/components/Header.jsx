@@ -2,6 +2,7 @@ import Link from "next/link";
 import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Image from "next/image";
 
 export default function Header() {
   const [nick, setNick] = useState("");
@@ -55,7 +56,11 @@ export default function Header() {
 
         <Link href="/accueil">
           <span className="flex justify-center flex-grow-0">
-            <img src="/logoRplace.svg" alt="logo R Place" className="mx-auto" />
+            <Image
+              src="/logoRplace.svg"
+              alt="logo R Place"
+              className="mx-auto"
+            />
           </span>
         </Link>
 

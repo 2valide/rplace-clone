@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
+import Image from "next/image";
 
 export default function BonusGrenade({ type, onActivate }) {
   const cooldownPeriod = 300; // 5 minutes
@@ -63,7 +64,7 @@ export default function BonusGrenade({ type, onActivate }) {
       onClick={handleClick}
     >
       {isActive ? (
-        <img src="/img/logo/bomb-solid.svg" alt="Grenade de couleur" />
+        <Image src="/img/logo/bomb-solid.svg" alt="Grenade de couleur" />
       ) : (
         <div className="text-black text-sm">{formatTime()}</div>
       )}
