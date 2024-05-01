@@ -39,7 +39,7 @@ export default function ColorPicker({ currentColor, setCurrentColor }) {
 
   return (
     <div
-      className="flex flex-wrap justify-between items-center p-2 bg-UtilitiesBackground rounded-xl max-w-40 gap-1"
+      className="flex flex-wrap justify-between items-center p-2 bg-UtilitiesBackground rounded-xl max-w-50 2xl:max-w-40 gap-1"
       style={{ backgroundSize: "cover" }}
     >
       {predefinedColors.map((color) => (

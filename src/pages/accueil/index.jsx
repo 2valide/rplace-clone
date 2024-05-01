@@ -43,17 +43,17 @@ export default function Accueil() {
 
   return (
     <>
-      <div className="h-screen overflow-hidden bg-[url('/img/background.png')] bg-cover px-40 flex flex-col gap-44">
+      <div className="h-screen overflow-hidden bg-[url('/img/background.png')] bg-cover px-4 sm:px-10 md:px-20 lg:px-40 flex flex-col gap-8 sm:gap-16 md:gap-24 lg:gap-44">
         <Header />
-        <div className="flex flex-col items-center gap-20">
-          <div className="bg-MainContentBackground rounded-3xl flex justify-center items-center flex-col p-20 font-pixelFont text-white max-w-2xl gap-12">
-            <h1 className="text-2xl">r/place</h1>
+        <div className="flex flex-col items-center gap-8 sm:gap-12 md:gap-16">
+          <div className="bg-MainContentBackground rounded-3xl flex justify-center items-center flex-col p-6 sm:p-10 md:p-16 lg:p-20 font-pixelFont text-white max-w-full md:max-w-2xl gap-4 sm:gap-8 md:gap-12">
+            <h1 className="text-xl md:text-2xl">r/place</h1>
             <form onSubmit={handleSubmit}>
               <input
                 type="text"
                 value={nick}
                 onChange={handleNickChange}
-                className={`border-2 ${
+                className={`w-full sm:w-3/4 md:w-2/3  border-2 ${
                   error ? "border-red-500" : "border-white"
                 } rounded-lg p-2 m-2 text-black`}
                 placeholder="Nick..."
@@ -68,8 +68,8 @@ export default function Accueil() {
             </form>
           </div>
           {showCreateButton && (
-            <div className="bg-MainContentBackground rounded-3xl flex justify-center items-center flex-col p-20 font-pixelFont text-white max-w-2xl gap-12">
-              <h1 className="text-2xl">Party mode</h1>
+            <div className="bg-MainContentBackground rounded-3xl flex justify-center items-center flex-col p-6 sm:p-10 md:p-16 lg:p-20 font-pixelFont text-white max-w-full md:max-w-2xl gap-4 sm:gap-8 md:gap-12">
+              <h1 className="text-xl md:text-2xl">Party mode</h1>
               <button
                 onClick={handleCreateClick}
                 className="border-2 border-white rounded-lg p-2 m-2 hover:bg-btnhover"
