@@ -14,6 +14,9 @@ export default function WarsArea() {
   const [isActiveLineX, setIsActiveLineX] = useState(false);
   const { id } = useRouter().query;
   const [isLoading, setLoading] = useState(true);
+  const [nick, setNick] = useState("");
+  const [error, setError] = useState("");
+  const [showNickPrompt, setShowNickPrompt] = useState(false);
 
   const loadGridState = async () => {
     setLoading(true);
@@ -71,6 +74,13 @@ export default function WarsArea() {
     redrawPixels(ctx);
     loadGridState();
 
+    const storedNick = Cookies.get("nick");
+    if (!storedNick) {
+      setShowNickPrompt(true);
+    } else {
+      setNick(storedNick);
+    }
+
     function handleMouseMove(e) {
       if (cooldown) return; // Ignore le mouvement de la souris si cooldown
       const rect = canvas.getBoundingClientRect();
@@ -80,7 +90,10 @@ export default function WarsArea() {
     }
 
     function handleClick(e) {
-      if (cooldown || checkCooldown()) return;
+      if (!nick) {
+        setError("Please enter a nickname to play.");
+        return;
+      } else if (cooldown || checkCooldown()) return;
 
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -207,8 +220,49 @@ export default function WarsArea() {
     }
   }
 
+  const handleSubmit = () => {
+    if (!nick.trim()) {
+      setError("Nickname cannot be empty.");
+      return;
+    }
+    Cookies.set("nick", nick);
+    setShowNickPrompt(false);
+    setError("");
+  };
+
+  const handleNickChange = (e) => {
+    setNick(e.target.value);
+    if (error) setError("");
+  };
+
   return (
     <>
+      <div
+        className={
+          showNickPrompt
+            ? "absolute z-50 flex justify-center items-center top-0 right-0 bottom-0 left-0 bg-black bg-opacity-50"
+            : "hidden"
+        }
+      >
+        <form onSubmit={handleSubmit} className="bg-white p-4 rounded-lg">
+          <input
+            type="text"
+            value={nick}
+            onChange={handleNickChange}
+            className={`border-2 ${
+              error ? "border-red-500" : "border-gray-300"
+            } rounded-lg p-2 m-2 text-black`}
+            placeholder="Enter your nickname..."
+          />
+          <button
+            type="submit"
+            className="border-2 border-gray-300 rounded-lg p-2 m-2 hover:bg-blue-500 text-white"
+          >
+            Play
+          </button>
+          {error && <p className="text-red-500">{error}</p>}
+        </form>
+      </div>
       <div
         className={
           isLoading

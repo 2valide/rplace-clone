@@ -1,4 +1,4 @@
-import '../styles/globals.css'; // Assurez-vous que le chemin vers votre fichier CSS est correct
+import '../styles/globals.css';
 
 function MyApp({ Component, pageProps }) {
     return <Component {...pageProps} />;
